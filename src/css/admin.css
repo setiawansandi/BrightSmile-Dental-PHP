@@ -166,7 +166,7 @@ section {
 
   .form-inline button {
     grid-column: span 1;
-    width: 100%;
+    /* width: 100%; */
   }
 }
 
