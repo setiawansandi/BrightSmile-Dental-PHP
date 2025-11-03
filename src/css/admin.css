@@ -1,0 +1,177 @@
+/* ===============================
+   ADMIN PANEL STYLES
+   =============================== */
+body {
+  font-family: "Figtree", sans-serif;
+  color: var(--color-text);
+}
+
+/* Main container */
+.admin-container {
+  max-width: 1100px;
+  margin: 3rem auto;
+  background: #fff;
+  padding: 2rem 3rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.admin-container h1 {
+  font-family: "Libre Baskerville", serif;
+  font-size: var(--size-3);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+section {
+  margin-bottom: 3rem;
+}
+
+/* ===============================
+   ADD DOCTOR FORM
+   =============================== */
+.add-doctor h2 {
+  font-size: var(--size-2);
+  margin-bottom: 1rem;
+  font-family: "Libre Baskerville", serif;
+}
+
+.add-doctor .form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--color-background);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--color-light-grey);
+}
+
+.add-doctor label {
+  font-weight: 600;
+}
+
+.add-doctor input,
+.add-doctor textarea {
+  font-family: "Figtree", sans-serif;
+  padding: 10px;
+  border: 1px solid var(--color-light-grey);
+  border-radius: 8px;
+  font-size: var(--size--1);
+  resize: vertical;
+}
+
+.add-doctor button {
+  margin-top: 1rem;
+  background: var(--color-primary);
+  color: white;
+  font-weight: bold;
+  font-size: var(--size-0);
+  border: none;
+  border-radius: 10px;
+  height: 45px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.add-doctor button:hover {
+  background: var(--color-primary-hover);
+}
+
+/* ===============================
+   DOCTOR LIST + CARDS
+   =============================== */
+.doctor-list h2 {
+  font-family: "Libre Baskerville", serif;
+  font-size: var(--size-2);
+  margin-bottom: 1.25rem;
+}
+
+.doctor-card {
+  border: 1px solid var(--color-light-grey);
+  background: var(--color-background);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.doctor-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Inline form */
+.form-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-inline label {
+  font-weight: 600;
+}
+
+.form-inline input,
+.form-inline textarea {
+  font-family: "Figtree", sans-serif;
+  padding: 10px;
+  border: 1px solid var(--color-light-grey);
+  border-radius: 8px;
+  font-size: var(--size--1);
+  resize: vertical;
+}
+
+/* ===============================
+   BUTTONS
+   =============================== */
+.btn-edit,
+.btn-danger {
+  border: none;
+  color: white;
+  font-weight: bold;
+  font-size: var(--size--1);
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-edit {
+  background: var(--color-status-green);
+}
+
+.btn-edit:hover {
+  background: #2da678;
+}
+
+.btn-danger {
+  background: var(--color-status-red);
+}
+
+.btn-danger:hover {
+  background: #c93538;
+}
+
+/* Responsive layout */
+@media (min-width: 768px) {
+  .form-inline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 2rem;
+    align-items: start;
+  }
+
+  .form-inline textarea {
+    grid-column: span 2;
+  }
+
+  .form-inline button {
+    grid-column: span 1;
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-container {
+    padding: 1.5rem;
+  }
+}

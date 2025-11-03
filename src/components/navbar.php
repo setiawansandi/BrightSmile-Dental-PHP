@@ -16,7 +16,8 @@ if (!empty($_SESSION['user_id'])) {
     $conn = db();
     $stmt = $conn->prepare("
       SELECT CONCAT_WS(' ', first_name, last_name) AS full_name,
-             COALESCE(avatar_url, '') AS avatar_url
+             COALESCE(avatar_url, '') AS avatar_url,
+             is_admin
       FROM users
       WHERE id = ?
   ");
@@ -31,6 +32,7 @@ if (!empty($_SESSION['user_id'])) {
 // Defaults if no avatar/name
 $displayName = $user['full_name'] ?? 'Account';
 $avatarUrl = !empty($user['avatar_url']) ? $user['avatar_url'] : 'assets/images/none.png';
+$isAdmin = !empty($user['is_admin']);
 ?>
 
 <div class="navbar-container">
@@ -62,6 +64,10 @@ $avatarUrl = !empty($user['avatar_url']) ? $user['avatar_url'] : 'assets/images/
 
                 <div class="user-dropdown" role="menu" aria-label="User menu">
                     <a href="dashboard.php" role="menuitem">Dashboard</a>
+
+                    <?php if ($isAdmin): ?>
+                        <a href="admin.php" role="menuitem">Admin Panel</a>
+                    <?php endif; ?>
 
                     <!-- Logout via POST -->
                     <form action="utils/logout.php" method="post">
