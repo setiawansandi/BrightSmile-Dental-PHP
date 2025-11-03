@@ -25,6 +25,7 @@ $result = $conn->query($sql);
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -49,21 +50,18 @@ $result = $conn->query($sql);
     <?php if ($result && $result->num_rows > 0): ?>
       <?php while ($row = $result->fetch_assoc()): ?>
         <?php
-          $doctorId = (int)$row['user_id'];
-          $name = 'Dr ' . htmlspecialchars($row['first_name'] . ' ' . $row['last_name']);
-          $specialty = htmlspecialchars($row['specialization']);
-          $bio = htmlspecialchars($row['bio']);
-          $avatarUrl = htmlspecialchars($row['avatar_url']);
+        $doctorId = (int) $row['user_id'];
+        $name = 'Dr ' . htmlspecialchars(trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')));
+        $specialty = htmlspecialchars((string) ($row['specialization'] ?? ''));
+        $bio = htmlspecialchars((string) ($row['bio'] ?? ''));
+        $avatarUrl = htmlspecialchars((string) ($row['avatar_url'] ?? ''));
 
-          // Fallback if no image set
-          if (empty($avatarUrl) || !file_exists($avatarUrl)) {
-            $avatarUrl = 'assets/images/default-doctor.png';
-          }
+        // Fallback if no image set
+        if (empty($avatarUrl) || !file_exists($avatarUrl)) {
+          $avatarUrl = 'assets/images/default-doctor.png';
+        }
         ?>
-        <div class="card"
-          data-name="<?= $name ?>"
-          data-specialty="<?= $specialty ?>"
-          data-description="<?= $bio ?>">
+        <div class="card" data-name="<?= $name ?>" data-specialty="<?= $specialty ?>" data-description="<?= $bio ?>">
           <img src="<?= $avatarUrl ?>" alt="<?= $name ?>">
           <h3><?= $name ?></h3>
           <p><?= $specialty ?></p>
@@ -100,4 +98,5 @@ $result = $conn->query($sql);
   <?php require __DIR__ . '/components/footer.php'; ?>
   <script src="js/doctors.js"></script>
 </body>
+
 </html>

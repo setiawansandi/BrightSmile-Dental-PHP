@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
   token_expires_at DATETIME NULL,
 
   is_doctor        TINYINT(1) NOT NULL DEFAULT 0,
+  is_admin        TINYINT(1) NOT NULL DEFAULT 0,
 
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_email (email),
