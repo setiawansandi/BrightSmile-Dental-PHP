@@ -70,8 +70,13 @@ if (isset($_POST['remove_doctor'])) {
 
 /* -------------------- FETCH DOCTORS -------------------- */
 $doctors = $conn->query("
-    SELECT u.id, u.email, CONCAT_WS(' ', u.first_name, u.last_name) AS name,
-           d.specialization, d.bio
+    SELECT 
+        u.id, 
+        u.email, 
+        u.first_name, 
+        u.last_name,
+        d.specialization, 
+        d.bio
     FROM users u
     JOIN doctors d ON d.user_id = u.id
     ORDER BY u.id DESC
@@ -88,49 +93,85 @@ $conn->close();
     <link rel="stylesheet" href="css/root.css">
     <link rel="stylesheet" href="css/admin.css">
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
+          rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" 
+          rel="stylesheet" />
 </head>
 <body>
 <?php include __DIR__ . '/components/navbar.php'; ?>
+
 <div class="admin-container">
     <h1>Admin Panel</h1>
 
+    <!-- ============================= -->
+    <!--        ADD DOCTOR FORM        -->
+    <!-- ============================= -->
     <section class="add-doctor">
         <h2>Add Doctor</h2>
         <form method="POST" class="form">
             <input type="hidden" name="add_doctor" value="1">
+
             <label>Email</label>
             <input type="email" name="email" required>
+
             <label>First Name</label>
             <input type="text" name="first_name" required>
+
             <label>Last Name</label>
             <input type="text" name="last_name" required>
+
             <label>Specialization</label>
             <input type="text" name="specialization" required>
+
             <label>Bio</label>
             <textarea name="bio" required></textarea>
-            <button type="submit">Add Doctor</button>
+
+            <button type="submit" class="btn-base">Add Doctor</button>
         </form>
     </section>
 
+    <!-- ============================= -->
+    <!--      EXISTING DOCTOR LIST     -->
+    <!-- ============================= -->
     <section class="doctor-list">
         <h2>Existing Doctors</h2>
-        <?php foreach ($doctors as $doc): ?>
-            <div class="doctor-card">
-                <form method="POST" class="form-inline">
-                    <input type="hidden" name="doctor_id" value="<?= $doc['id'] ?>">
-                    <label>First Name</label>
-                    <input type="text" name="first_name" value="<?= htmlspecialchars($doc['name']) ?>" required>
-                    <label>Specialization</label>
-                    <input type="text" name="specialization" value="<?= htmlspecialchars($doc['specialization']) ?>" required>
-                    <label>Bio</label>
-                    <textarea name="bio"><?= htmlspecialchars($doc['bio']) ?></textarea>
-                    <button type="submit" name="edit_doctor" class="btn-edit">Save Changes</button>
-                    <button type="submit" name="remove_doctor" class="btn-danger">Remove</button>
-                </form>
-            </div>
-        <?php endforeach; ?>
+
+        <?php if (count($doctors) === 0): ?>
+            <p>No doctors found.</p>
+        <?php else: ?>
+            <?php foreach ($doctors as $doc): ?>
+                <div class="doctor-card">
+                    <h3>
+                        <?= htmlspecialchars($doc['first_name'] . ' ' . $doc['last_name']) ?>
+                    </h3>
+                    <p><b>Email:</b> <?= htmlspecialchars($doc['email']) ?></p>
+
+                    <form method="POST" class="form-inline">
+                        <input type="hidden" name="doctor_id" value="<?= $doc['id'] ?>">
+
+                        <label>First Name</label>
+                        <input type="text" name="first_name" 
+                               value="<?= htmlspecialchars($doc['first_name'] ?? '') ?>" required>
+
+                        <label>Last Name</label>
+                        <input type="text" name="last_name" 
+                               value="<?= htmlspecialchars($doc['last_name'] ?? '') ?>" required>
+
+                        <label>Specialization</label>
+                        <input type="text" name="specialization" 
+                               value="<?= htmlspecialchars($doc['specialization'] ?? '') ?>" required>
+
+                        <label>Bio</label>
+                        <textarea name="bio"><?= htmlspecialchars($doc['bio'] ?? '') ?></textarea>
+
+                        <div class="button-group">
+                            <button type="submit" name="edit_doctor" class="btn-edit">Save Changes</button>
+                            <button type="submit" name="remove_doctor" class="btn-danger">Remove</button>
+                        </div>
+                    </form>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </section>
 </div>
 
