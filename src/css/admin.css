@@ -17,7 +17,7 @@ body {
 }
 
 .admin-container h1 {
-  font-family: "Libre Baskerville", serif;
+  font-family: "Figtree", serif;
   font-size: var(--size-3);
   text-align: center;
   margin-bottom: 2rem;
@@ -33,7 +33,7 @@ section {
 .add-doctor h2 {
   font-size: var(--size-2);
   margin-bottom: 1rem;
-  font-family: "Libre Baskerville", serif;
+  font-family: "Figtree", serif;
 }
 
 .add-doctor .form {
@@ -81,9 +81,15 @@ section {
    DOCTOR LIST + CARDS
    =============================== */
 .doctor-list h2 {
-  font-family: "Libre Baskerville", serif;
+  font-family: "Figtree", serif;
   font-size: var(--size-2);
   margin-bottom: 1.25rem;
+}
+
+input[readonly] {
+  background-color: #f5f5f5;
+  color: #555;
+  cursor: not-allowed;
 }
 
 .doctor-card {
@@ -93,6 +99,12 @@ section {
   border-radius: 12px;
   margin-bottom: 1.5rem;
   transition: box-shadow 0.2s ease;
+}
+
+.doctor-card h3 {
+    margin-bottom: 30px;
+    color: var(--color-primary);
+    font-size: var(--size-2);
 }
 
 .doctor-card:hover {
@@ -174,4 +186,91 @@ section {
   .admin-container {
     padding: 1.5rem;
   }
+}
+
+.tab-container {
+  margin-top: 2rem;
+}
+
+.tab-buttons {
+  display: flex;
+  border-bottom: 2px solid var(--color-light-grey);
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  background: none;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  font-family: "Figtree", sans-serif;
+  font-size: var(--size-0);
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-button:hover {
+  background: var(--color-background);
+}
+
+.tab-button.active {
+  border-bottom: 3px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+/* Tab content panels */
+.tab-content {
+  display: none;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Table in appointments */
+.appt-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.appt-table th,
+.appt-table td {
+  border: 1px solid var(--color-light-grey);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: var(--size--1);
+}
+
+.appt-table th {
+  background: var(--color-background);
+  font-weight: 600;
+}
+
+.pagination {
+  margin-top: 1rem;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pagination a,
+.pagination span {
+  font-size: var(--size--1);
 }
