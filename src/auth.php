@@ -72,7 +72,7 @@ function validate_signup_input(array $in, mysqli $conn): array
     return $errors;
 }
 
-// Put this near your other helpers
+// Reset session safely, keep user_id
 function keep_only_user_id(int $id): void
 {
     session_regenerate_id(true);   // new session id for safety

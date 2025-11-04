@@ -17,7 +17,7 @@ $csrf = $_SESSION['csrf'];
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $conn = db();
 $conn->set_charset('utf8mb4');
-$conn->query("SET time_zone = '+08:00'"); // keep your timezone if needed
+$conn->query("SET time_zone = '+08:00'");
 
 /* ====== HELPERS (page-local) ====== */
 function e($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }

@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const doctorId = item.getAttribute("data-doctor-id");
       if (!doctorId || !hiddenInput) return;
 
-      // Update hidden input (used by your availability fetch + form submit)
+      // Update hidden input (used by availability fetch + form submit)
       hiddenInput.value = doctorId;
 
       // Update the display inside the dropdown header
