@@ -1,7 +1,7 @@
 <?php
 // src/components/footer.php
 
-// Tiny escape helper (if you don't already have one loaded)
+// Tiny escape helper
 if (!function_exists('e')) {
   function e($s)
   {
@@ -9,16 +9,7 @@ if (!function_exists('e')) {
   }
 }
 
-/**
- * Overrides (optional)
- * You can set these BEFORE including this file:
- *   $brand         string   Site/brand name
- *   $logo_path     string   Path/URL to the logo
- *   $description   string   One or two sentences for the footer intro
- *   $links         array[]  List of ['href' => '/path', 'label' => 'Text']
- *
- * All paths below default to absolute URLs so they work from any directory.
- */
+
 $brand = $brand ?? 'BrightSmile';
 $logo_path = $logo_path ?? 'assets/icons/logo.svg';
 $description = $description ?? 'BrightSmile offers gentle, modern dental care with clear guidance and advanced technology. Comfortable visits, from checkups to cosmetic treatments.';

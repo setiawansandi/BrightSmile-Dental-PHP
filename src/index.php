@@ -55,19 +55,19 @@
       <div class="features-grid">
         <div class="feature-card">
           <p>Schedule your appointments online 24/7 with our convenient booking system</p>
-          <h3><img src="assets/icons/benefit.svg" alt=""> Easy Booking</h3>
+          <h3><img src="assets/icons/benefit 1.svg" alt=""> Easy Booking</h3>
         </div>
         <div class="feature-card">
           <p>Extended hours including evenings and weekends to fit your schedule</p>
-          <h3><img src="assets/icons/benefit.svg" alt=""> Flexible Hour</h3>
+          <h3><img src="assets/icons/benefit 2.svg" alt=""> Flexible Hour</h3>
         </div>
         <div class="feature-card">
           <p>Experienced dentists committed to your oral health</p>
-          <h3><img src="assets/icons/benefit.svg" alt=""> Expert Team</h3>
+          <h3><img src="assets/icons/benefit 3.svg" alt=""> Expert Team</h3>
         </div>
         <div class="feature-card">
           <p>State-of-art equipment and peak dental care</p>
-          <h3><img src="assets/icons/benefit.svg" alt=""> Quality Care</h3>
+          <h3><img src="assets/icons/benefit 4.svg" alt=""> Quality Care</h3>
         </div>
       </div>
 

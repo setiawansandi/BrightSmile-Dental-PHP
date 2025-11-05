@@ -2,7 +2,7 @@
 // src/components/navbar.php
 require_once __DIR__ . '/../utils/bootstrap.php'; // session + db + redirect
 
-// Tiny escape helper (only if you don't already have one)
+// Tiny escape helper
 if (!function_exists('e')) {
     function e($s)
     {
