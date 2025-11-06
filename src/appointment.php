@@ -1,5 +1,4 @@
 <?php
-// --- 1. SETUP ---
 require_once __DIR__ . '/utils/bootstrap.php';
 
 // ===== helper to check role =====
@@ -27,7 +26,7 @@ if ($is_logged_in) {
     }
 }
 
-// --- 2. AVAILABILITY CHECK (API MODE) ---
+// ===== AVAILABILITY CHECK (API MODE) =====
 if (isset($_GET['doctor']) && isset($_GET['date'])) {
     header('Content-Type: application/json');
 
@@ -78,10 +77,7 @@ if (isset($_GET['doctor']) && isset($_GET['date'])) {
     exit;
 }
 
-
-
-
-// --- 3. FORM SUBMISSION (POST MODE) ---
+// ===== FORM SUBMISSION =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($is_logged_in) {
         try {
@@ -103,22 +99,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $appt_time = $_POST['appt_time'];
             $is_update = !empty($_POST['update_id']);
 
+            $appointment_id = 0;
+
             if ($is_update) {
-                $appointment_id_to_update = (int) $_POST['update_id'];
+                $appointment_id = (int) $_POST['update_id'];
                 if ($is_doctor) {
                     $sql = "UPDATE appointments 
                             SET doctor_user_id = ?, appt_date = ?, appt_time = ?
                             WHERE id = ? AND doctor_user_id = ? AND patient_user_id = ?";
                     $stmt = $conn->prepare($sql);
-                    $stmt->bind_param('issiii', $doctor_user_id, $appt_date, $appt_time, $appointment_id_to_update, $user_id, $patient_user_id);
+                    $stmt->bind_param('issiii', $doctor_user_id, $appt_date, $appt_time, $appointment_id, $user_id, $patient_user_id);
                 } else {
                     $sql = "UPDATE appointments 
                             SET doctor_user_id = ?, appt_date = ?, appt_time = ?
                             WHERE id = ? AND patient_user_id = ?";
                     $stmt = $conn->prepare($sql);
-                    $stmt->bind_param('issii', $doctor_user_id, $appt_date, $appt_time, $appointment_id_to_update, $patient_user_id);
+                    $stmt->bind_param('issii', $doctor_user_id, $appt_date, $appt_time, $appointment_id, $patient_user_id);
                 }
                 $stmt->execute();
+                $stmt->close();
+
+                // CREATE NOTIFICATION FOR RESCHEDULE
+                $actor_id = $user_id;
+                $action_type = 'rescheduled';
+
+                // Find the recipient
+                if ($is_doctor) {
+                    $recipient_id = $patient_user_id;
+                } else {
+                    $recipient_id = $doctor_user_id;
+                }
+
+                if (isset($recipient_id) && $recipient_id > 0) {
+                    $stmt_notify = $conn->prepare(
+                        "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
+                         VALUES (?, ?, ?, ?)"
+                    );
+                    $stmt_notify->bind_param("iiis", $recipient_id, $actor_id, $appointment_id, $action_type);
+                    $stmt_notify->execute();
+                    $stmt_notify->close();
+                }
+
             } else {
                 if ($is_doctor) {
                     header('Location: appointment.php?error=' . urlencode('doctor_cannot_create_here'));
@@ -129,11 +150,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param('iiss', $patient_user_id, $doctor_user_id, $appt_date, $appt_time);
                 $stmt->execute();
+                $appointment_id = $conn->insert_id;
+                $stmt->close();
+
+                // --- CREATE NOTIFICATION for Booking ---
+                $actor_id = $patient_user_id;
+                $recipient_id = $doctor_user_id;
+                $action_type = 'booked';
+
+                if ($recipient_id > 0 && $appointment_id > 0) {
+                    $stmt_notify = $conn->prepare(
+                        "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
+                         VALUES (?, ?, ?, ?)"
+                    );
+                    $stmt_notify->bind_param("iiis", $recipient_id, $actor_id, $appointment_id, $action_type);
+                    $stmt_notify->execute();
+                    $stmt_notify->close();
+                }
             }
 
-            $stmt->close();
-
-            // --- Email notification (optional) ---
+            // --- Email notification ---
             try {
                 $stmt_user = $conn->prepare("SELECT email, first_name FROM users WHERE id = ?");
                 $stmt_user->bind_param('i', $patient_user_id);
@@ -180,7 +216,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $conn->close();
-            header('Location: appointment.php?success=booked');
+            // Redirect to dashboard to see the result
+            header('Location: dashboard.php?success=' . ($is_update ? 'rescheduled' : 'booked'));
             exit;
         } catch (Exception $e) {
             header('Location: appointment.php?error=' . urlencode($e->getMessage()));
@@ -364,7 +401,7 @@ if ($is_logged_in) {
                 }
                 $preselected_date = $appointment_to_reschedule['appt_date'];
                 $preselected_time = (new DateTime($appointment_to_reschedule['appt_time']))->format('H:i');
-                ?>
+            ?>
                 <form action="appointment.php" method="POST">
                     <input type="hidden" name="patient_user_id" value="<?= (int) $doctor_resched_patient_id ?>">
                     <input type="hidden" name="doctor_id" value="<?= (int) $user_id ?>" required>
@@ -464,7 +501,7 @@ if ($is_logged_in) {
                 if ($doc['id'] == $preselected_doctor_id)
                     $preselected_doctor = $doc;
         }
-        ?>
+    ?>
         <main class="appointment-container">
             <h1 class="main-title"><?= $is_rescheduling ? 'Reschedule' : 'Book an' ?> <span>Appointment</span></h1>
 

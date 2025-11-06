@@ -162,15 +162,7 @@
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-/* Reveal on hover or keyboard focus */
-.user-menu:hover .user-dropdown,
-.user-menu:focus-within .user-dropdown {
-  display: block;
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Menu items (just text) */
+/* Menu items */
 .user-dropdown a,
 .user-dropdown button.logout-link {
   width: 100%;
@@ -207,12 +199,210 @@
   text-decoration: none;
 }
 
-.user-menu:hover .dropdown-arrow-icon,
-.user-menu:focus-within .dropdown-arrow-icon {
+/* INBOX */
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.inbox-menu {
+  position: relative;
+}
+
+.inbox-menu::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 10px;
+}
+
+.inbox-icon-link {
+  display: block;
+  padding: 6px;
+  border-radius: 8px;
+  position: relative;
+  cursor: pointer;
+  text-decoration: none;
+  line-height: 0;
+}
+
+.inbox-icon-link img {
+  width: 28px;
+  height: 28px;
+}
+
+.inbox-icon-link:hover {
+  background-color: var(--color-bg-grey, #f5f5f5);
+}
+
+.inbox-icon-link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 9px;
+  height: 9px;
+  background-color: var(--color-danger, #e53e3e);
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+/* New Inbox Dropdown Styles */
+.inbox-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -190px;
+  left: auto;
+  width: 363px;
+  padding: 0;
+  font-family: "Figtree", sans-serif;
+  background: #fff;
+  border: 1px solid var(--color-light-grey);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  display: none;
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.inbox-dropdown-header {
+  padding: 16px 16px 12px 16px;
+  border-bottom: 1px solid var(--color-light-grey);
+}
+
+.inbox-dropdown-header h3 {
+  margin: 0;
+  font-size: var(--size-1);
+  font-weight: 600;
+}
+
+.inbox-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 8px 16px 8px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.inbox-list-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.inbox-list-item.is-unread {
+  background-color: #f0f7ff;
+}
+
+.inbox-list-item:not(.is-unread) {
+  background-color: transparent;
+}
+
+.inbox-list-item.is-unread .item-text {
+  font-weight: 600;
+}
+
+.inbox-list-item.is-unread .item-text strong {
+  font-weight: 800;
+}
+
+.inbox-list-item.is-unread:hover {
+  background-color: var(--color-light-grey, #e8effc);
+}
+
+.inbox-list-item:hover {
+  background-color: var(--color-light-grey, #f5f5f5);
+}
+
+.inbox-list-item .item-icon {
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  color: var(--color-light-grey);
+  flex-shrink: 0;
+}
+
+.inbox-list-item .item-icon[src*="calendar-check.svg"],
+.inbox-list-item .item-icon[src*="calendar-x.svg"] {
+  width: 30px;
+  height: 30px;
+  margin-top: 1px;
+}
+
+.inbox-list-item .item-text {
+  font-size: var(--size-0);
+  margin: 0;
+  line-height: 1.5;
+  color: var(--color-text-light);
+}
+
+.inbox-list-item .item-text .item-time {
+  display: block;
+  font-size: var(--size--1);
+  color: var(--color-text-light);
+  font-weight: 400;
+  margin-top: 4px;
+}
+
+.inbox-list-item .item-text strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Style for empty list */
+.inbox-list-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--color-text-light);
+  font-size: var(--size-0);
+}
+.inbox-list-empty p {
+  margin: 0;
+  font-family: "Figtree", sans-serif;
+  font-size: var(--size--1);
+  color: var(--color-dark-grey);
+}
+
+.inbox-footer {
+  padding: 0;
+  text-align: center;
+  border-top: 1px solid var(--color-light-grey);
+}
+
+.inbox-footer a {
+  display: block;
+  padding: 12px;
+  text-decoration: none;
+  font-size: var(--size--1);
+  color: var(--color-primary);
+  font-weight: 500;
+  border-radius: 0 0 12px 12px;
+}
+.inbox-footer a:hover {
+  background-color: var(--color-bg-grey, #f5f5f5);
+}
+
+.user-menu.is-open .user-dropdown,
+.inbox-menu.is-open .inbox-dropdown {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.user-menu.is-open .dropdown-arrow-icon {
   transform: rotate(180deg);
   transition: transform 0.15s ease;
 }
-/* END - Navbar */
 
 /* Footer section */
 .footer {
