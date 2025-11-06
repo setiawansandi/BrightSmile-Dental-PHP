@@ -146,8 +146,13 @@ function format_relative_time($datetime_string)
             <div class="user-actions">
 
                 <div class="inbox-menu">
-                    <a href="#" id="inbox-trigger" class="inbox-icon-link" aria-haspopup="menu" aria-expanded="false" data-unread-count="<?= $unread_count ?>">
-                        <img src="assets/icons/inbox.svg" alt="Inbox">
+                    <a href="#" id="inbox-trigger" class="inbox-icon-link" aria-haspopup="menu" aria-expanded="false"
+                        data-unread-count="<?= $unread_count ?>">
+                        <svg width="25" height="26" viewBox="0 0 25 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd"
+                                d="M12.1958 0C7.01975 0 2.82372 4.19603 2.82372 9.37209V10.2236C2.82372 11.0663 2.57425 11.8903 2.10676 12.5915L0.717746 14.675C-0.894363 17.0932 0.336356 20.3801 3.14023 21.1448C4.05399 21.394 4.97547 21.6048 5.90229 21.7772L5.90459 21.7834C6.83453 24.2648 9.32002 26 12.1958 26C15.0715 26 17.557 24.2648 18.4869 21.7834L18.4892 21.7772C19.416 21.6048 20.3376 21.394 21.2514 21.1448C24.0553 20.3801 25.286 17.0932 23.6739 14.675L22.2849 12.5915C21.8173 11.8903 21.5679 11.0663 21.5679 10.2236V9.37209C21.5679 4.19603 17.3718 0 12.1958 0ZM16.2789 22.1145C13.5665 22.4386 10.8249 22.4385 8.11255 22.1144C8.9723 23.3498 10.4677 24.186 12.1958 24.186C13.9237 24.186 15.4192 23.3498 16.2789 22.1145ZM4.63768 9.37209C4.63768 5.19785 8.02157 1.81395 12.1958 1.81395C16.37 1.81395 19.7539 5.19785 19.7539 9.37209V10.2236C19.7539 11.4245 20.1094 12.5985 20.7755 13.5978L22.1645 15.6813C23.0899 17.0692 22.3835 18.9558 20.7741 19.3948C15.1578 20.9265 9.23382 20.9265 3.61751 19.3948C2.00813 18.9558 1.30173 17.0692 2.22705 15.6813L3.61606 13.5978C4.2822 12.5985 4.63768 11.4245 4.63768 10.2236V9.37209Z"
+                                fill="currentColor" />
+                        </svg>
                         <?php if ($unread_count > 0): ?>
                             <span class="notification-dot"></span>
                         <?php endif; ?>
@@ -163,8 +168,9 @@ function format_relative_time($datetime_string)
                                 </li>
                             <?php else: ?>
                                 <?php foreach ($notifications as $notif): ?>
-                                    <li class="inbox-list-item <?php echo $notif['is_read'] ? '' : 'is-unread'; ?>" data-notification-id="<?= e($notif['id']) ?>">
-                                        
+                                    <li class="inbox-list-item <?php echo $notif['is_read'] ? '' : 'is-unread'; ?>"
+                                        data-notification-id="<?= e($notif['id']) ?>">
+
                                         <?php if ($notif['action_type'] == 'completed'): ?>
                                             <img src="assets/icons/calendar-check.svg" alt="" class="item-icon">
                                         <?php elseif ($notif['action_type'] == 'canceled'): ?>
@@ -172,13 +178,14 @@ function format_relative_time($datetime_string)
                                         <?php elseif ($notif['action_type'] == 'rescheduled'): ?>
                                             <img src="assets/icons/calendar-clock.svg" alt="" class="item-icon">
                                         <?php else:
-                                        ?>
+                                            ?>
                                             <img src="assets/icons/calendar.svg" alt="" class="item-icon">
                                         <?php endif; ?>
 
                                         <p class="item-text">
                                             <?php echo format_notification($notif); ?>
-                                            <span class="item-time"><?php echo e(format_relative_time($notif['created_at'])); ?></span>
+                                            <span
+                                                class="item-time"><?php echo e(format_relative_time($notif['created_at'])); ?></span>
                                         </p>
                                     </li>
                                 <?php endforeach; ?>

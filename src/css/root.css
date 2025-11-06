@@ -217,7 +217,7 @@
 .user-actions {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.2rem;
 }
 
 .inbox-menu {
@@ -241,15 +241,23 @@
   cursor: pointer;
   text-decoration: none;
   line-height: 0;
+  --icon-color: #222;
 }
 
-.inbox-icon-link img {
-  width: 28px;
-  height: 28px;
+.inbox-icon-link svg {
+  width: 23px;
+  height: 24px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.inbox-icon-link svg path {
+  fill: var(--icon-color);
+  transition: fill .2s ease;
 }
 
 .inbox-icon-link:hover {
-  background-color: var(--color-bg-grey, #f5f5f5);
+  --icon-color: var(--color-primary);
 }
 
 .inbox-icon-link:focus-visible {
@@ -272,7 +280,7 @@
 .inbox-dropdown {
   position: absolute;
   top: calc(100% + 10px);
-  right: -190px;
+  right: -150px;
   left: auto;
   width: 363px;
   padding: 0;
