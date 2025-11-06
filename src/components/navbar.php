@@ -41,7 +41,6 @@ if (!empty($_SESSION['user_id'])) {
             n.appointment_id,
             a.appt_date,
             a.appt_time,
-            -- Get the name of the person who *caused* the notification
             CONCAT_WS(' ', actor.first_name, actor.last_name) AS actor_name
         FROM notifications AS n
         LEFT JOIN users AS actor ON n.actor_id = actor.id
@@ -81,17 +80,42 @@ $isAdmin = !empty($user['is_admin']);
 function format_notification($notif)
 {
     $actor = '<strong>' . e($notif['actor_name']) . '</strong>';
-    $time = $notif['appt_date'] ? ' on ' . e(date('d M Y', strtotime($notif['appt_date']))) : '';
+    
+    $preposition = '';
+    
+    if ($notif['appt_date']) {
+        $formatted_date = e(date('d M Y', strtotime($notif['appt_date'])));
+        
+        switch ($notif['action_type']) {
+            case 'rescheduled':
+            case 'rescheduled_actor':
+                $preposition = ' to ' . $formatted_date;
+                break;
+            default:
+                $preposition = ' on ' . $formatted_date;
+                break;
+        }
+    }
+    
+    $time = $preposition;
 
     switch ($notif['action_type']) {
         case 'booked':
             return "$actor booked an appointment with you$time.";
+        case 'booked_actor':
+            return "You have successfully booked an appointment with $actor$time.";
         case 'rescheduled':
             return "$actor rescheduled your appointment$time.";
+        case 'rescheduled_actor':
+            return "You have successfully rescheduled your appointment with $actor$time.";
         case 'canceled':
             return "$actor canceled an appointment$time.";
+        case 'canceled_actor':
+            return "You have successfully canceled your appointment with $actor$time.";
         case 'completed':
             return "Your appointment with $actor$time is completed.";
+        case 'completed_actor':
+            return "You successfully marked the appointment with $actor$time as completed.";
         default:
             return 'You have a new notification.';
     }
@@ -104,13 +128,20 @@ function format_relative_time($datetime_string)
     }
 
     try {
-        $notif_time = new DateTime($datetime_string);
-        $now = new DateTime(); // Current time
+        $local_timezone = new DateTimeZone('Asia/Singapore');
+        $notif_time = new DateTime($datetime_string, $local_timezone);
+        $now = new DateTime('now', $local_timezone);
         $interval = $now->diff($notif_time);
 
-        if ($interval->days > 6) {
+        $notif_ts = $notif_time->getTimestamp();
+        $now_ts = $now->getTimestamp();
+        $diff_seconds = $now_ts - $notif_ts;
+        
+        if ($diff_seconds < 0 || $interval->days > 6) {
             return $notif_time->format('d M, g:i a');
-        } elseif ($interval->d > 0) {
+        } 
+        
+        if ($interval->d > 0) {
             return $interval->d . ($interval->d == 1 ? ' day' : ' days') . ' ago';
         } elseif ($interval->h > 0) {
             return $interval->h . ($interval->h == 1 ? ' hour' : ' hours') . ' ago';
@@ -171,15 +202,15 @@ function format_relative_time($datetime_string)
                                     <li class="inbox-list-item <?php echo $notif['is_read'] ? '' : 'is-unread'; ?>"
                                         data-notification-id="<?= e($notif['id']) ?>">
 
-                                        <?php if ($notif['action_type'] == 'completed'): ?>
-                                            <img src="assets/icons/calendar-check.svg" alt="" class="item-icon">
-                                        <?php elseif ($notif['action_type'] == 'canceled'): ?>
-                                            <img src="assets/icons/calendar-x.svg" alt="" class="item-icon">
-                                        <?php elseif ($notif['action_type'] == 'rescheduled'): ?>
-                                            <img src="assets/icons/calendar-clock.svg" alt="" class="item-icon">
-                                        <?php else:
-                                            ?>
-                                            <img src="assets/icons/calendar.svg" alt="" class="item-icon">
+                                        <?php if ($notif['action_type'] == 'completed' || $notif['action_type'] == 'completed_actor'): ?>
+                                            <img src="assets/icons/calendar-check.svg" alt="Completed" class="item-icon">
+                                        <?php elseif ($notif['action_type'] == 'canceled' || $notif['action_type'] == 'canceled_actor'): ?>
+                                            <img src="assets/icons/calendar-x.svg" alt="Canceled" class="item-icon">
+                                        <?php elseif ($notif['action_type'] == 'rescheduled' || $notif['action_type'] == 'rescheduled_actor'): ?>
+                                            <img src="assets/icons/calendar-clock.svg" alt="Rescheduled" class="item-icon">
+                                        <?php else 
+                                            :?>
+                                            <img src="assets/icons/calendar.svg" alt="New Activity" class="item-icon">
                                         <?php endif; ?>
 
                                         <p class="item-text">

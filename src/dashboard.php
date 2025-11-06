@@ -18,7 +18,8 @@ $csrf = $_SESSION['csrf'];
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $conn = db();
 $conn->set_charset('utf8mb4');
-$conn->query("SET time_zone = '+08:00'"); // keep your timezone if needed
+// This line keeps your connection time zone set to UTC+8, essential for data integrity.
+$conn->query("SET time_zone = '+08:00'");
 
 /* ====== HELPERS (page-local) ====== */
 function e($s)
@@ -44,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['app
         exit('Bad request (CSRF).');
     }
 
-    $action         = strtolower(trim((string)$_POST['action']));
+    $action     = strtolower(trim((string)$_POST['action']));
     $appointmentId = (int) $_POST['appointmentId'];
     if (!$appointmentId || !in_array($action, ['cancel', 'complete'], true)) {
         redirect('dashboard.php');
@@ -59,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['app
     $stmt->close();
     $isDoctor = $row && ((int)$row['is_doctor'] === 1);
 
-    // Load appointment
+    // Load appointment details (Patient and Doctor IDs)
     $stmt = $conn->prepare("SELECT id, patient_user_id, doctor_user_id, status FROM appointments WHERE id = ?");
     $stmt->bind_param('i', $appointmentId);
     $stmt->execute();
@@ -89,28 +90,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['app
             $stmt->execute();
             $stmt->close();
 
-            // 2. --- CREATE NOTIFICATION ---
+            // 2. --- CREATE DOUBLE NOTIFICATION (UPDATED LOGIC) ---
             $actor_id = $userId; // The person logged in is the actor
-            // Use 'canceled' for the ENUM, even if status is 'cancelled'
-            $action_type = ($nextStatus === 'cancelled') ? 'canceled' : 'completed';
 
-            // Find the recipient (the *other* person)
-            if ($isDoctor) {
-                $recipient_id = (int)$appt['patient_user_id']; // Doctor notifies patient
-            } else {
-                $recipient_id = (int)$appt['doctor_user_id']; // Patient notifies doctor
-            }
+            // Determine the roles for logging
+            $current_patient_id = (int)$appt['patient_user_id'];
+            $current_doctor_id = (int)$appt['doctor_user_id'];
 
-            if ($recipient_id > 0) {
-                $stmt_notify = $conn->prepare(
+            // Base action type (e.g., 'canceled' or 'completed')
+            $base_action = ($nextStatus === 'cancelled') ? 'canceled' : 'completed';
+
+            // Determine the OTHER PARTY's ID (needed for logging the actor's confirmation message)
+            $other_party_id = ($actor_id === $current_patient_id) ? $current_doctor_id : $current_patient_id;
+
+            // A. Log notification for the TARGET RECIPIENT (The other party)
+            // Recipient: The person NOT performing the action
+            $target_recipient_id = $other_party_id;
+            $action_type_recipient = $base_action;
+
+            if ($target_recipient_id > 0) {
+                $stmt_target_notify = $conn->prepare(
                     "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
                      VALUES (?, ?, ?, ?)"
                 );
-                $stmt_notify->bind_param("iiis", $recipient_id, $actor_id, $appointmentId, $action_type);
-                $stmt_notify->execute();
-                $stmt_notify->close();
+                $stmt_target_notify->bind_param("iiis", $target_recipient_id, $actor_id, $appointmentId, $action_type_recipient);
+                $stmt_target_notify->execute();
+                $stmt_target_notify->close();
             }
-            // --- END NOTIFICATION ---
+
+            // B. Log CONFIRMATION notification for the ACTOR (The person who clicked the button)
+            // Recipient: $actor_id | Actor for message: The OTHER PARTY'S ID (for correct name in confirmation message)
+            $action_type_actor = $base_action . '_actor'; // e.g., 'canceled_actor' or 'completed_actor'
+
+            if ($actor_id > 0) {
+                $stmt_actor_notify = $conn->prepare(
+                    "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
+                     VALUES (?, ?, ?, ?)"
+                );
+                $stmt_actor_notify->bind_param("iiis", $actor_id, $other_party_id, $appointmentId, $action_type_actor);
+                $stmt_actor_notify->execute();
+                $stmt_actor_notify->close();
+            }
+            // --- END DOUBLE NOTIFICATION ---
 
             redirect('dashboard.php?updated=1');
         } else {
@@ -152,8 +173,10 @@ if ($isDoctor) {
     $sqlAppts = "
         SELECT
             a.id,
+            a.patient_user_id,
+            a.doctor_user_id,
             DATE_FORMAT(a.appt_date, '%d/%m/%Y') AS date_fmt,
-            DATE_FORMAT(a.appt_time, '%H:%i')     AS time_fmt,
+            DATE_FORMAT(a.appt_time, '%H:%i') AS time_fmt,
             a.status,
             CONCAT_WS(' ', pu.first_name, pu.last_name) AS counterpart_name
         FROM appointments a
@@ -166,8 +189,10 @@ if ($isDoctor) {
     $sqlAppts = "
         SELECT
             a.id,
+            a.patient_user_id,
+            a.doctor_user_id,
             DATE_FORMAT(a.appt_date, '%d/%m/%Y') AS date_fmt,
-            DATE_FORMAT(a.appt_time, '%H:%i')     AS time_fmt,
+            DATE_FORMAT(a.appt_time, '%H:%i') AS time_fmt,
             a.status,
             CONCAT_WS(' ', du.first_name, du.last_name) AS counterpart_name
         FROM appointments a
@@ -177,14 +202,14 @@ if ($isDoctor) {
     ";
 }
 $stmt = $conn->prepare($sqlAppts);
-$stmt->bind_param('i', $userId); // Use correct $userId
+$stmt->bind_param('i', $userId);
 $stmt->execute();
 $res = $stmt->get_result();
 while ($row = $res->fetch_assoc()) {
     $appointments[] = $row;
 }
 $stmt->close();
-$conn->close(); // Close DB connection after all queries are done
+$conn->close();
 
 $firstColHeader = $isDoctor ? 'Patient' : 'Doctor';
 ?>
@@ -215,7 +240,7 @@ $firstColHeader = $isDoctor ? 'Patient' : 'Doctor';
         <?php elseif (isset($_GET['error']) && $_GET['error'] === 'not_found'): ?>
             <div class="flash error">Appointment not found.</div>
         <?php endif; ?>
-
+        
         <!-- User Information -->
         <div class="section-card patient-card">
             <p class="section-title"><?= $isDoctor ? 'Doctor Information' : 'Patient Information' ?></p>
@@ -238,7 +263,7 @@ $firstColHeader = $isDoctor ? 'Patient' : 'Doctor';
                 <img src="assets/icons/logo.svg" alt="Logo" />
             </div>
         </div>
-
+        
         <!-- Appointment History -->
         <div class="section-card history-card">
             <p class="section-title">Appointment History</p>
@@ -279,8 +304,6 @@ $firstColHeader = $isDoctor ? 'Patient' : 'Doctor';
                                             <a class="btn-base btn-sm" href="appointment.php?appointmentId=<?= (int)$a['id'] ?>">Reschedule</a>
 
                                             <?php if ($isDoctor): ?>
-                                                <!-- Doctor: mark as Completed -->
-                                                <!-- UPDATED: Added class and data-message -->
                                                 <form action="dashboard.php" method="post" class="js-confirm-form" data-message="Mark this appointment as complete?" data-action-type="complete">
                                                     <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
                                                     <input type="hidden" name="appointmentId" value="<?= (int)$a['id'] ?>">
@@ -288,8 +311,6 @@ $firstColHeader = $isDoctor ? 'Patient' : 'Doctor';
                                                     <button type="submit" class="btn-base btn-sm btn-complete">Complete</button>
                                                 </form>
                                             <?php else: ?>
-                                                <!-- Patient: Cancel -->
-                                                <!-- UPDATED: Added class, data-message, and data-action-type -->
                                                 <form action="dashboard.php" method="post" class="js-confirm-form" data-message="Are you sure you want to cancel this appointment?" data-action-type="cancel">
                                                     <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
                                                     <input type="hidden" name="appointmentId" value="<?= (int)$a['id'] ?>">
@@ -325,88 +346,7 @@ $firstColHeader = $isDoctor ? 'Patient' : 'Doctor';
         </div>
     </div>
 
-    <!-- NEW MODAL SCRIPT (UPGRADED) -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const modal = document.getElementById('confirm-modal');
-            if (!modal) return;
-
-            const titleEl = document.getElementById('modal-title');
-            const messageEl = document.getElementById('modal-message');
-            const confirmBtn = document.getElementById('modal-btn-confirm');
-            const cancelBtn = document.getElementById('modal-btn-cancel');
-            const formsToConfirm = document.querySelectorAll('.js-confirm-form');
-            let formToSubmit = null;
-
-            const showModal = (form) => {
-                formToSubmit = form;
-                const msg = form.getAttribute('data-message') || 'Are you sure?';
-                const actionType = form.getAttribute('data-action-type') || 'cancel';
-
-                // Set message
-                if (messageEl) {
-                    messageEl.textContent = msg;
-                }
-
-                // Style confirm button based on action
-                confirmBtn.classList.remove('is-danger', 'is-complete');
-                if (actionType === 'cancel') {
-                    titleEl.textContent = 'Cancel Appointment';
-                    confirmBtn.textContent = 'Confirm';
-                    confirmBtn.classList.add('is-danger');
-                } else if (actionType === 'complete') {
-                    titleEl.textContent = 'Complete Appointment';
-                    confirmBtn.textContent = 'Confirm';
-                    confirmBtn.classList.add('is-complete');
-                } else {
-                    // Default fallback
-                    titleEl.textContent = 'Confirm Action';
-                    confirmBtn.textContent = 'Confirm';
-                    confirmBtn.classList.add('is-danger');
-                }
-
-                modal.setAttribute('aria-hidden', 'false');
-                modal.classList.add('is-visible');
-                confirmBtn.focus(); // Focus the confirm button
-            };
-
-            const hideModal = () => {
-                modal.setAttribute('aria-hidden', 'true');
-                modal.classList.remove('is-visible');
-                formToSubmit = null;
-            };
-
-            formsToConfirm.forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault(); // Stop the form submission
-                    showModal(form); // Show modal instead
-                });
-            });
-
-            confirmBtn.addEventListener('click', () => {
-                if (formToSubmit) {
-                    formToSubmit.submit(); // Manually submit the original form
-                }
-                hideModal();
-            });
-
-            cancelBtn.addEventListener('click', hideModal);
-
-            // Close on backdrop click
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    hideModal();
-                }
-            });
-
-            // Close on Escape key
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && modal.classList.contains('is-visible')) {
-                    hideModal();
-                }
-            });
-        });
-    </script>
+    <script src="js/dashboard.js"></script>
 </body>
 
 </html>

@@ -15,7 +15,7 @@ if ($is_logged_in) {
         $stmt->execute();
         $res = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        $conn->close();
+        if (isset($conn)) $conn->close();
 
         if ($res) {
             $is_doctor = ((int) $res['is_doctor'] === 1);
@@ -38,10 +38,10 @@ if (isset($_GET['doctor']) && isset($_GET['date'])) {
     try {
         $conn = db();
         $sql = "SELECT id, appt_time, patient_user_id
-                FROM appointments
-                WHERE doctor_user_id = ?
-                  AND appt_date = ?
-                  AND status != 'cancelled'";
+                 FROM appointments
+                 WHERE doctor_user_id = ?
+                   AND appt_date = ?
+                   AND status != 'cancelled'";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param('is', $doctor_id, $date);
         $stmt->execute();
@@ -61,10 +61,10 @@ if (isset($_GET['doctor']) && isset($_GET['date'])) {
 
             $booked_times[] = [
                 'time' => $time,
-                // 'appointment_id'  => (int)$row['id'],          // <-- appt id per row
+                // 'appointment_id' 	=> (int)$row['id'], 			// <-- appt id per row
                 'patient_user_id' => (int) $row['patient_user_id'],
                 'is_mine' => ($isMineForPatient || $isMineForDoctor),
-                // 'is_doctors'      => $isViewingOwnDoctorDay 
+                // 'is_doctors' 			=> $isViewingOwnDoctorDay 
             ];
         }
         $stmt->close();
@@ -103,6 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($is_update) {
                 $appointment_id = (int) $_POST['update_id'];
+                
+                // --- 1. UPDATE APPOINTMENT ---
                 if ($is_doctor) {
                     $sql = "UPDATE appointments 
                             SET doctor_user_id = ?, appt_date = ?, appt_time = ?
@@ -119,53 +121,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute();
                 $stmt->close();
 
-                // CREATE NOTIFICATION FOR RESCHEDULE
-                $actor_id = $user_id;
-                $action_type = 'rescheduled';
-
-                // Find the recipient
-                if ($is_doctor) {
-                    $recipient_id = $patient_user_id;
-                } else {
-                    $recipient_id = $doctor_user_id;
-                }
-
-                if (isset($recipient_id) && $recipient_id > 0) {
-                    $stmt_notify = $conn->prepare(
+                // --- 2. CREATE DOUBLE NOTIFICATION FOR RESCHEDULE ---
+                $actor_id = $user_id; 
+                
+                $current_patient_id = $patient_user_id; 
+                $current_doctor_id = $doctor_user_id;   
+                
+                // A. Log notification for the TARGET RECIPIENT
+                $target_recipient_id = ($actor_id === $current_patient_id) ? $current_doctor_id : $current_patient_id;
+                $action_type_recipient = 'rescheduled'; 
+                
+                if (isset($target_recipient_id) && $target_recipient_id > 0) {
+                    $stmt_target_notify = $conn->prepare(
                         "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
                          VALUES (?, ?, ?, ?)"
                     );
-                    $stmt_notify->bind_param("iiis", $recipient_id, $actor_id, $appointment_id, $action_type);
-                    $stmt_notify->execute();
-                    $stmt_notify->close();
+                    $stmt_target_notify->bind_param("iiis", $target_recipient_id, $actor_id, $appointment_id, $action_type_recipient);
+                    $stmt_target_notify->execute();
+                    $stmt_target_notify->close();
                 }
-
+                
+                // B. Log CONFIRMATION notification for the ACTOR
+                $other_party_id = ($actor_id === $current_patient_id) ? $current_doctor_id : $current_patient_id; 
+                $action_type_actor = 'rescheduled_actor'; 
+                
+                if ($actor_id > 0 && $appointment_id > 0) {
+                    $stmt_actor_notify = $conn->prepare(
+                        "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
+                         VALUES (?, ?, ?, ?)"
+                    );
+                    $stmt_actor_notify->bind_param("iiis", $actor_id, $other_party_id, $appointment_id, $action_type_actor);
+                    $stmt_actor_notify->execute();
+                    $stmt_actor_notify->close();
+                }
+                
             } else {
                 if ($is_doctor) {
                     header('Location: appointment.php?error=' . urlencode('doctor_cannot_create_here'));
                     exit;
                 }
                 $sql = "INSERT INTO appointments (patient_user_id, doctor_user_id, appt_date, appt_time, status) 
-                        VALUES (?, ?, ?, ?, 'confirmed')";
+                         VALUES (?, ?, ?, ?, 'confirmed')";
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param('iiss', $patient_user_id, $doctor_user_id, $appt_date, $appt_time);
                 $stmt->execute();
                 $appointment_id = $conn->insert_id;
                 $stmt->close();
 
-                // --- CREATE NOTIFICATION for Booking ---
-                $actor_id = $patient_user_id;
-                $recipient_id = $doctor_user_id;
-                $action_type = 'booked';
+                // --- CREATE DOUBLE NOTIFICATION FOR BOOKING ---
+                $current_patient_id = $patient_user_id;
+                $current_doctor_id = $doctor_user_id;
 
-                if ($recipient_id > 0 && $appointment_id > 0) {
-                    $stmt_notify = $conn->prepare(
+                if ($appointment_id > 0) {
+                    // A. Log notification for the DOCTOR (Recipient of the request)
+                    $stmt_doctor_notify = $conn->prepare(
                         "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
-                         VALUES (?, ?, ?, ?)"
+                         VALUES (?, ?, ?, 'booked')"
                     );
-                    $stmt_notify->bind_param("iiis", $recipient_id, $actor_id, $appointment_id, $action_type);
-                    $stmt_notify->execute();
-                    $stmt_notify->close();
+                    $stmt_doctor_notify->bind_param("iii", $current_doctor_id, $current_patient_id, $appointment_id);
+                    $stmt_doctor_notify->execute();
+                    $stmt_doctor_notify->close();
+
+                    // B. Log CONFIRMATION for the PATIENT (Actor of the request)
+                    $stmt_patient_notify = $conn->prepare(
+                        "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
+                         VALUES (?, ?, ?, 'booked_actor')"
+                    );
+                    $stmt_patient_notify->bind_param("iii", $current_patient_id, $current_doctor_id, $appointment_id);
+                    $stmt_patient_notify->execute();
+                    $stmt_patient_notify->close();
                 }
             }
 
@@ -572,7 +596,7 @@ if ($is_logged_in) {
 
                         <input type="hidden" id="selected_doctor_id" name="doctor_id"
                             value="<?= $is_doctor ? (int) $user_id : ($preselected_doctor['id'] ?? '') ?>" required>
-
+                        
                         <!-- Only visible to patients -->
                         <?php if (!$is_doctor): ?>
                             <div class="doctor-list">
