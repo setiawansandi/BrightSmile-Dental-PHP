@@ -346,19 +346,19 @@
   background-color: var(--color-light-grey, #f5f5f5);
 }
 
-.inbox-list-item .item-icon {
-  width: 24px;
-  height: 24px;
-  margin-top: 5px;
-  color: var(--color-light-grey);
-  flex-shrink: 0;
-}
-
 .inbox-list-item .item-icon[src*="calendar-check.svg"],
 .inbox-list-item .item-icon[src*="calendar-x.svg"] {
   width: 30px;
   height: 30px;
   margin-top: 6px;
+}
+
+.inbox-list-item .item-icon[src*="calendar.svg"],
+.inbox-list-item .item-icon[src*="calendar-clock.svg"] {
+  width: 24px;
+  height: 24px;
+  margin-top: 6px;
+  margin-right: 6px;
 }
 
 .inbox-list-item .item-text {
