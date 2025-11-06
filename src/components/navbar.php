@@ -154,7 +154,7 @@ function format_relative_time($datetime_string)
                     </a>
                     <div class="inbox-dropdown" role="menu" aria-label="Notifications">
                         <div class="inbox-dropdown-header">
-                            <h3>Activity</h3>
+                            <h3>Notifications</h3>
                         </div>
                         <ul class="inbox-list">
                             <?php if (empty($notifications)): ?>
