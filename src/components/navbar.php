@@ -146,7 +146,7 @@ function format_relative_time($datetime_string)
             <div class="user-actions">
 
                 <div class="inbox-menu">
-                    <a href="#" id="inbox-trigger" class="inbox-icon-link" aria-haspopup="menu" aria-expanded="false">
+                    <a href="#" id="inbox-trigger" class="inbox-icon-link" aria-haspopup="menu" aria-expanded="false" data-unread-count="<?= $unread_count ?>">
                         <img src="assets/icons/inbox.svg" alt="Inbox">
                         <?php if ($unread_count > 0): ?>
                             <span class="notification-dot"></span>
@@ -211,98 +211,4 @@ function format_relative_time($datetime_string)
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const inboxTrigger = document.getElementById('inbox-trigger');
-        const inboxMenu = inboxTrigger ? inboxTrigger.closest('.inbox-menu') : null;
-        const notificationDot = inboxTrigger ? inboxTrigger.querySelector('.notification-dot') : null;
-
-        const userTrigger = document.querySelector('.user-profile-trigger');
-        const userMenu = userTrigger ? userTrigger.closest('.user-menu') : null;
-
-        let currentUnreadCount = <?php echo $unread_count; ?>;
-
-        // Function to update the red dot visibility
-        function updateNotificationDot() {
-            if (notificationDot) {
-                if (currentUnreadCount > 0) {
-                    notificationDot.style.display = 'block'; // Show red dot
-                } else {
-                    notificationDot.style.display = 'none'; // Hide red dot
-                }
-            }
-        }
-
-        // Initialize dot state
-        updateNotificationDot();
-
-        // --- Notification Menu Toggle Logic ---
-        if (inboxTrigger && inboxMenu) {
-            inboxTrigger.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                if (userMenu) userMenu.classList.remove('is-open');
-                
-                inboxMenu.classList.toggle('is-open');
-            });
-
-            // --- Individual Notification Click Logic ---
-            const inboxList = document.querySelector('.inbox-list');
-            if (inboxList) {
-                inboxList.addEventListener('click', function(e) {
-                    const listItem = e.target.closest('.inbox-list-item');
-                    if (listItem && listItem.classList.contains('is-unread')) {
-                        const notificationId = listItem.dataset.notificationId;
-
-                        // Ensure notificationId is present before fetching
-                        if (!notificationId) return;
-
-                        fetch('utils/mark_notifications.php', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ notification_id: notificationId })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                listItem.classList.remove('is-unread');
-                                currentUnreadCount--;
-                                updateNotificationDot(); // Update the dot based on new count
-                            } else {
-                                console.error('Failed to mark notification as read:', data.message);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error marking notification as read:', error);
-                        });
-                    }
-                });
-            }
-        }
-
-        // --- User Menu Logic ---
-        if (userTrigger && userMenu) {
-            userTrigger.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                if (inboxMenu) inboxMenu.classList.remove('is-open');
-
-                userMenu.classList.toggle('is-open');
-            });
-        }
-
-        // --- Global "Click Away" Listener ---
-        document.addEventListener('click', function(e) {
-            if (userMenu && userMenu.classList.contains('is-open') && !userMenu.contains(e.target)) {
-                userMenu.classList.remove('is-open');
-            }
-            if (inboxMenu && inboxMenu.classList.contains('is-open') && !inboxMenu.contains(e.target)) {
-                inboxMenu.classList.remove('is-open');
-            }
-        });
-    });
-</script>
+<script src="js/notifications.js"></script>
