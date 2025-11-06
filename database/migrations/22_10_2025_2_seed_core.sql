@@ -16,8 +16,8 @@ VALUES
 -- user-patients
 (5, 'whayyu.kham@example.com', '$argon2id$v=19$m=16,t=2,p=1$Y0ZIMG4zM3pHSjhUR01aZw$BcMaxr07YFeubR5YIRnhze5MlbP6m+yEqT+KF8uxGEo', 'Whay Yu', 'Kham', '2002-01-01', NULL, '+6590000005', NOW(), 0, 0),
 (6, 'jane.doe@example.com',    '$argon2id$v=19$m=16,t=2,p=1$Y0ZIMG4zM3pHSjhUR01aZw$BcMaxr07YFeubR5YIRnhze5MlbP6m+yEqT+KF8uxGEo', 'Chop De', 'Sit', '1995-05-18', NULL, '+6590000006', NOW(), 0, 0),
-(7, 'amir.rahman@example.com', '$argon2id$v=19$m=16,t=2,p=1$Y0ZIMG4zM3pHSjhUR01aZw$BcMaxr07YFeubR5YIRnhze5MlbP6m+yEqT+KF8uxGEo', 'La Tang', 'Mah','1991-09-07', NULL, '+6590000007', NOW(), 0, 0);
-(8, 'admin@gmail.com',         '$argon2id$v=19$m=16,t=2,p=1$Y0ZIMG4zM3pHSjhUR01aZw$BcMaxr07YFeubR5YIRnhze5MlbP6m+yEqT+KF8uxGEo', 'Admin', 'User', '1991-09-07', NULL, '+6590000007', NOW(), 1, 1)
+(7, 'amir.rahman@example.com', '$argon2id$v=19$m=16,t=2,p=1$Y0ZIMG4zM3pHSjhUR01aZw$BcMaxr07YFeubR5YIRnhze5MlbP6m+yEqT+KF8uxGEo', 'La Tang', 'Mah','1991-09-07', NULL, '+6590000007', NOW(), 0, 0),
+(8, 'admin@gmail.com',         '$argon2id$v=19$m=16,t=2,p=1$Y0ZIMG4zM3pHSjhUR01aZw$BcMaxr07YFeubR5YIRnhze5MlbP6m+yEqT+KF8uxGEo', 'Admin', 'User', '1991-09-07', NULL, '+6590000007', NOW(), 1, 1);
 
 
 -- DOCTORS
