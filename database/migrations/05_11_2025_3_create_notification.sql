@@ -11,26 +11,13 @@ SET time_zone = '+08:00';
 -- NOTIFICATIONS
 CREATE TABLE IF NOT EXISTS notifications (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    
-    -- Who should RECEIVE this notification? (e.g., the patient or doctor)
     recipient_id INT UNSIGNED NOT NULL, 
-    
-    -- Who CAUSED this event? (e.g., the patient or doctor)
     actor_id INT UNSIGNED NOT NULL, 
-    
-    -- Which appointment is this about?
     appointment_id INT UNSIGNED NULL, 
-    
-    -- What action happened?
-    action_type ENUM('booked', 'rescheduled', 'canceled', 'completed') NOT NULL,
-    
-    -- Has the recipient seen this yet?
+    action_type ENUM('booked', 'rescheduled', 'canceled', 'completed', 'booked_actor', 'rescheduled_actor', 'canceled_actor', 'completed_actor') NOT NULL,
     is_read TINYINT(1) DEFAULT 0 NOT NULL,
-    
-    -- When did this happen?
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
-    -- Define the relationships
     FOREIGN KEY (recipient_id) 
         REFERENCES users(id) 
         ON DELETE CASCADE,
