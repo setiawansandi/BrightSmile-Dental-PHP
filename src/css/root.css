@@ -162,7 +162,15 @@
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-/* Menu items */
+/* Reveal on hover or keyboard focus */
+.user-menu:hover .user-dropdown,
+.user-menu:focus-within .user-dropdown {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Menu items (just text) */
 .user-dropdown a,
 .user-dropdown button.logout-link {
   width: 100%;
@@ -197,6 +205,12 @@
 .user-profile-trigger {
   user-select: none;
   text-decoration: none;
+}
+
+.user-menu:hover .dropdown-arrow-icon,
+.user-menu:focus-within .dropdown-arrow-icon {
+  transform: rotate(180deg);
+  transition: transform 0.15s ease;
 }
 
 /* INBOX */
