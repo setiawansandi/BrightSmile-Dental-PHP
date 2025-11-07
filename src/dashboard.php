@@ -18,7 +18,6 @@ $csrf = $_SESSION['csrf'];
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 $conn = db();
 $conn->set_charset('utf8mb4');
-// This line keeps your connection time zone set to UTC+8, essential for data integrity.
 $conn->query("SET time_zone = '+08:00'");
 
 /* ====== HELPERS (page-local) ====== */
@@ -51,9 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['app
         redirect('dashboard.php');
     }
 
-    // Who am I?
     $stmt = $conn->prepare("SELECT is_doctor FROM users WHERE id = ?");
-    $stmt->bind_param('i', $userId); // Use correct $userId
+    $stmt->bind_param('i', $userId);
     $stmt->execute();
     $res = $stmt->get_result();
     $row = $res->fetch_assoc();
@@ -72,39 +70,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['app
         $nextStatus = null;
 
         if ($action === 'cancel') {
-            // Patient can cancel their own confirmed appointment
-            if (!$isDoctor && (int)$appt['patient_user_id'] === $userId && $status === 'confirmed') { // Use correct $userId
+            if (!$isDoctor && (int)$appt['patient_user_id'] === $userId && $status === 'confirmed') {
                 $nextStatus = 'cancelled';
             }
         } elseif ($action === 'complete') {
-            // Doctor can complete their own confirmed appointment
-            if ($isDoctor && (int)$appt['doctor_user_id'] === $userId && $status === 'confirmed') { // Use correct $userId
+            if ($isDoctor && (int)$appt['doctor_user_id'] === $userId && $status === 'confirmed') {
                 $nextStatus = 'completed';
             }
         }
 
         if ($nextStatus) {
-            // 1. UPDATE THE APPOINTMENT
+            // UPDATE THE APPOINTMENT
             $stmt = $conn->prepare("UPDATE appointments SET status = ? WHERE id = ?");
             $stmt->bind_param('si', $nextStatus, $appointmentId);
             $stmt->execute();
             $stmt->close();
 
-            // 2. --- CREATE DOUBLE NOTIFICATION (UPDATED LOGIC) ---
-            $actor_id = $userId; // The person logged in is the actor
+            // CREATE DOUBLE NOTIFICATION ---
+            $actor_id = $userId;
 
             // Determine the roles for logging
             $current_patient_id = (int)$appt['patient_user_id'];
             $current_doctor_id = (int)$appt['doctor_user_id'];
 
-            // Base action type (e.g., 'canceled' or 'completed')
             $base_action = ($nextStatus === 'cancelled') ? 'canceled' : 'completed';
 
-            // Determine the OTHER PARTY's ID (needed for logging the actor's confirmation message)
             $other_party_id = ($actor_id === $current_patient_id) ? $current_doctor_id : $current_patient_id;
 
-            // A. Log notification for the TARGET RECIPIENT (The other party)
-            // Recipient: The person NOT performing the action
             $target_recipient_id = $other_party_id;
             $action_type_recipient = $base_action;
 
@@ -118,9 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['app
                 $stmt_target_notify->close();
             }
 
-            // B. Log CONFIRMATION notification for the ACTOR (The person who clicked the button)
-            // Recipient: $actor_id | Actor for message: The OTHER PARTY'S ID (for correct name in confirmation message)
-            $action_type_actor = $base_action . '_actor'; // e.g., 'canceled_actor' or 'completed_actor'
+            $action_type_actor = $base_action . '_actor';
 
             if ($actor_id > 0) {
                 $stmt_actor_notify = $conn->prepare(
@@ -131,7 +121,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['app
                 $stmt_actor_notify->execute();
                 $stmt_actor_notify->close();
             }
-            // --- END DOUBLE NOTIFICATION ---
 
             redirect('dashboard.php?updated=1');
         } else {
@@ -140,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'], $_POST['app
     } else {
         redirect('dashboard.php?error=not_found');
     }
-    exit; // Make sure to exit after POST logic
+    exit;
 }
 
 /* ====== USER (PATIENT/DOCTOR) INFO ====== */
@@ -157,7 +146,7 @@ $sqlUser = "
     WHERE id = ?
 ";
 $stmt = $conn->prepare($sqlUser);
-$stmt->bind_param('i', $userId); // Use correct $userId
+$stmt->bind_param('i', $userId);
 $stmt->execute();
 $res = $stmt->get_result();
 $me = $res->fetch_assoc() ?: [];
