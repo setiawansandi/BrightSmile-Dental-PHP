@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($is_update) {
                 $appointment_id = (int) $_POST['update_id'];
                 
-                // --- 1. UPDATE APPOINTMENT ---
+                // --- UPDATE APPOINTMENT ---
                 if ($is_doctor) {
                     $sql = "UPDATE appointments 
                             SET doctor_user_id = ?, appt_date = ?, appt_time = ?
@@ -121,13 +121,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute();
                 $stmt->close();
 
-                // --- 2. CREATE DOUBLE NOTIFICATION FOR RESCHEDULE ---
+                // --- CREATE DOUBLE NOTIFICATION FOR RESCHEDULE ---
                 $actor_id = $user_id; 
                 
                 $current_patient_id = $patient_user_id; 
                 $current_doctor_id = $doctor_user_id;   
                 
-                // A. Log notification for the TARGET RECIPIENT
+                // Log notification for the TARGET RECIPIENT
                 $target_recipient_id = ($actor_id === $current_patient_id) ? $current_doctor_id : $current_patient_id;
                 $action_type_recipient = 'rescheduled'; 
                 
@@ -141,7 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt_target_notify->close();
                 }
                 
-                // B. Log CONFIRMATION notification for the ACTOR
+                // Log CONFIRMATION notification for the ACTOR
                 $other_party_id = ($actor_id === $current_patient_id) ? $current_doctor_id : $current_patient_id; 
                 $action_type_actor = 'rescheduled_actor'; 
                 
@@ -173,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $current_doctor_id = $doctor_user_id;
 
                 if ($appointment_id > 0) {
-                    // A. Log notification for the DOCTOR (Recipient of the request)
+                    // Log notification for the DOCTOR (Recipient of the request)
                     $stmt_doctor_notify = $conn->prepare(
                         "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
                          VALUES (?, ?, ?, 'booked')"
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt_doctor_notify->execute();
                     $stmt_doctor_notify->close();
 
-                    // B. Log CONFIRMATION for the PATIENT (Actor of the request)
+                    // Log CONFIRMATION for the PATIENT (Actor of the request)
                     $stmt_patient_notify = $conn->prepare(
                         "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
                          VALUES (?, ?, ?, 'booked_actor')"
@@ -253,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// --- 4. PAGE LOAD (GET MODE) ---
+// --- PAGE LOAD (GET MODE) ---
 $all_doctors = [];
 $upcoming_appointments = [];
 $reschedule_mode = false;
