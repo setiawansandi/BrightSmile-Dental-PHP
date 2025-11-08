@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <img src="${
               imgEl
                 ? imgEl.getAttribute("src")
-                : "assets/images/default-avatar.png"
+                : "assets/images/default-doctor.png"
             }" alt="${nameEl ? nameEl.textContent : "Doctor"}">
             <div class="doctor-info">
               <span class="doctor-name">${

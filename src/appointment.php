@@ -441,7 +441,7 @@ if ($is_logged_in) {
                                     <input type="hidden" id="selected_doctor_id" name="doctor_id"
                                         value="<?= $is_doctor ? (int) $user_id : ($preselected_doctor['id'] ?? '') ?>" required>
                                     <div class="doctor-item">
-                                        <img src="<?= htmlspecialchars($preselected_doctor['avatar_url'] ?? 'assets/images/default-avatar.png') ?>"
+                                        <img src="<?= htmlspecialchars($preselected_doctor['avatar_url'] ?? 'assets/images/default-doctor.png') ?>"
                                             alt="Dr <?= htmlspecialchars($doctor_fullname) ?>">
                                         <div class="doctor-info">
                                             <span class="doctor-name">Dr <?= htmlspecialchars($doctor_fullname) ?></span>
@@ -499,7 +499,7 @@ if ($is_logged_in) {
                 </div>
                 <?php foreach ($upcoming_appointments as $appt): ?>
                     <section class="appointment-card">
-                        <img src="<?= htmlspecialchars($appt['avatar_url'] ?? 'assets/images/default-avatar.png') ?>"
+                        <img src="<?= htmlspecialchars($appt['avatar_url'] ?? 'assets/images/default-doctor.png') ?>"
                             alt="Dr <?= htmlspecialchars($appt['first_name']) ?>" class="doctor-pic">
                         <div class="appointment-details">
                             <?php $d = new DateTime($appt['appt_date'] . ' ' . $appt['appt_time']); ?>
@@ -576,7 +576,7 @@ if ($is_logged_in) {
                                 ?>
                                 <?php if ($doctorDisplay): ?>
                                     <div class="doctor-item">
-                                        <img src="<?= htmlspecialchars($doctorDisplay['avatar_url'] ?? 'assets/images/default-avatar.png') ?>"
+                                        <img src="<?= htmlspecialchars($doctorDisplay['avatar_url'] ?? 'assets/images/default-doctor.png') ?>"
                                             alt="Dr <?= htmlspecialchars($doctorDisplay['first_name']) ?>">
                                         <div class="doctor-info">
                                             <span class="doctor-name">Dr
@@ -602,7 +602,7 @@ if ($is_logged_in) {
                             <div class="doctor-list">
                                 <?php foreach ($all_doctors as $doctor): ?>
                                     <div class="doctor-item" data-doctor-id="<?= $doctor['id'] ?>">
-                                        <img src="<?= htmlspecialchars($doctor['avatar_url'] ?? 'assets/images/default-avatar.png') ?>"
+                                        <img src="<?= htmlspecialchars($doctor['avatar_url'] ?? 'assets/images/default-doctor.png') ?>"
                                             alt="Dr <?= htmlspecialchars($doctor['first_name']) ?>">
                                         <div class="doctor-info">
                                             <span class="doctor-name">Dr
