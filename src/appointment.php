@@ -1,5 +1,4 @@
 <?php
-// --- 1. SETUP ---
 require_once __DIR__ . '/utils/bootstrap.php';
 
 // ===== helper to check role =====
@@ -16,7 +15,7 @@ if ($is_logged_in) {
         $stmt->execute();
         $res = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-        $conn->close();
+        if (isset($conn)) $conn->close();
 
         if ($res) {
             $is_doctor = ((int) $res['is_doctor'] === 1);
@@ -27,7 +26,7 @@ if ($is_logged_in) {
     }
 }
 
-// --- 2. AVAILABILITY CHECK (API MODE) ---
+// ===== AVAILABILITY CHECK (API MODE) =====
 if (isset($_GET['doctor']) && isset($_GET['date'])) {
     header('Content-Type: application/json');
 
@@ -39,10 +38,10 @@ if (isset($_GET['doctor']) && isset($_GET['date'])) {
     try {
         $conn = db();
         $sql = "SELECT id, appt_time, patient_user_id
-                FROM appointments
-                WHERE doctor_user_id = ?
-                  AND appt_date = ?
-                  AND status != 'cancelled'";
+                 FROM appointments
+                 WHERE doctor_user_id = ?
+                   AND appt_date = ?
+                   AND status != 'cancelled'";
         $stmt = $conn->prepare($sql);
         $stmt->bind_param('is', $doctor_id, $date);
         $stmt->execute();
@@ -62,10 +61,10 @@ if (isset($_GET['doctor']) && isset($_GET['date'])) {
 
             $booked_times[] = [
                 'time' => $time,
-                // 'appointment_id'  => (int)$row['id'],          // <-- appt id per row
+                // 'appointment_id' 	=> (int)$row['id'], 			// <-- appt id per row
                 'patient_user_id' => (int) $row['patient_user_id'],
                 'is_mine' => ($isMineForPatient || $isMineForDoctor),
-                // 'is_doctors'      => $isViewingOwnDoctorDay 
+                // 'is_doctors' 			=> $isViewingOwnDoctorDay 
             ];
         }
         $stmt->close();
@@ -78,10 +77,7 @@ if (isset($_GET['doctor']) && isset($_GET['date'])) {
     exit;
 }
 
-
-
-
-// --- 3. FORM SUBMISSION (POST MODE) ---
+// ===== FORM SUBMISSION =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($is_logged_in) {
         try {
@@ -103,37 +99,101 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $appt_time = $_POST['appt_time'];
             $is_update = !empty($_POST['update_id']);
 
+            $appointment_id = 0;
+
             if ($is_update) {
-                $appointment_id_to_update = (int) $_POST['update_id'];
+                $appointment_id = (int) $_POST['update_id'];
+                
+                // --- UPDATE APPOINTMENT ---
                 if ($is_doctor) {
                     $sql = "UPDATE appointments 
                             SET doctor_user_id = ?, appt_date = ?, appt_time = ?
                             WHERE id = ? AND doctor_user_id = ? AND patient_user_id = ?";
                     $stmt = $conn->prepare($sql);
-                    $stmt->bind_param('issiii', $doctor_user_id, $appt_date, $appt_time, $appointment_id_to_update, $user_id, $patient_user_id);
+                    $stmt->bind_param('issiii', $doctor_user_id, $appt_date, $appt_time, $appointment_id, $user_id, $patient_user_id);
                 } else {
                     $sql = "UPDATE appointments 
                             SET doctor_user_id = ?, appt_date = ?, appt_time = ?
                             WHERE id = ? AND patient_user_id = ?";
                     $stmt = $conn->prepare($sql);
-                    $stmt->bind_param('issii', $doctor_user_id, $appt_date, $appt_time, $appointment_id_to_update, $patient_user_id);
+                    $stmt->bind_param('issii', $doctor_user_id, $appt_date, $appt_time, $appointment_id, $patient_user_id);
                 }
                 $stmt->execute();
+                $stmt->close();
+
+                // --- CREATE DOUBLE NOTIFICATION FOR RESCHEDULE ---
+                $actor_id = $user_id; 
+                
+                $current_patient_id = $patient_user_id; 
+                $current_doctor_id = $doctor_user_id;   
+                
+                // Log notification for the TARGET RECIPIENT
+                $target_recipient_id = ($actor_id === $current_patient_id) ? $current_doctor_id : $current_patient_id;
+                $action_type_recipient = 'rescheduled'; 
+                
+                if (isset($target_recipient_id) && $target_recipient_id > 0) {
+                    $stmt_target_notify = $conn->prepare(
+                        "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
+                         VALUES (?, ?, ?, ?)"
+                    );
+                    $stmt_target_notify->bind_param("iiis", $target_recipient_id, $actor_id, $appointment_id, $action_type_recipient);
+                    $stmt_target_notify->execute();
+                    $stmt_target_notify->close();
+                }
+                
+                // Log CONFIRMATION notification for the ACTOR
+                $other_party_id = ($actor_id === $current_patient_id) ? $current_doctor_id : $current_patient_id; 
+                $action_type_actor = 'rescheduled_actor'; 
+                
+                if ($actor_id > 0 && $appointment_id > 0) {
+                    $stmt_actor_notify = $conn->prepare(
+                        "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
+                         VALUES (?, ?, ?, ?)"
+                    );
+                    $stmt_actor_notify->bind_param("iiis", $actor_id, $other_party_id, $appointment_id, $action_type_actor);
+                    $stmt_actor_notify->execute();
+                    $stmt_actor_notify->close();
+                }
+                
             } else {
                 if ($is_doctor) {
                     header('Location: appointment.php?error=' . urlencode('doctor_cannot_create_here'));
                     exit;
                 }
                 $sql = "INSERT INTO appointments (patient_user_id, doctor_user_id, appt_date, appt_time, status) 
-                        VALUES (?, ?, ?, ?, 'confirmed')";
+                         VALUES (?, ?, ?, ?, 'confirmed')";
                 $stmt = $conn->prepare($sql);
                 $stmt->bind_param('iiss', $patient_user_id, $doctor_user_id, $appt_date, $appt_time);
                 $stmt->execute();
+                $appointment_id = $conn->insert_id;
+                $stmt->close();
+
+                // --- CREATE DOUBLE NOTIFICATION FOR BOOKING ---
+                $current_patient_id = $patient_user_id;
+                $current_doctor_id = $doctor_user_id;
+
+                if ($appointment_id > 0) {
+                    // Log notification for the DOCTOR (Recipient of the request)
+                    $stmt_doctor_notify = $conn->prepare(
+                        "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
+                         VALUES (?, ?, ?, 'booked')"
+                    );
+                    $stmt_doctor_notify->bind_param("iii", $current_doctor_id, $current_patient_id, $appointment_id);
+                    $stmt_doctor_notify->execute();
+                    $stmt_doctor_notify->close();
+
+                    // Log CONFIRMATION for the PATIENT (Actor of the request)
+                    $stmt_patient_notify = $conn->prepare(
+                        "INSERT INTO notifications (recipient_id, actor_id, appointment_id, action_type) 
+                         VALUES (?, ?, ?, 'booked_actor')"
+                    );
+                    $stmt_patient_notify->bind_param("iii", $current_patient_id, $current_doctor_id, $appointment_id);
+                    $stmt_patient_notify->execute();
+                    $stmt_patient_notify->close();
+                }
             }
 
-            $stmt->close();
-
-            // --- Email notification (optional) ---
+            // --- Email notification ---
             try {
                 $stmt_user = $conn->prepare("SELECT email, first_name FROM users WHERE id = ?");
                 $stmt_user->bind_param('i', $patient_user_id);
@@ -180,7 +240,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             $conn->close();
-            header('Location: appointment.php?success=booked');
+            // Redirect to dashboard to see the result
+            header('Location: dashboard.php?success=' . ($is_update ? 'rescheduled' : 'booked'));
             exit;
         } catch (Exception $e) {
             header('Location: appointment.php?error=' . urlencode($e->getMessage()));
@@ -192,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// --- 4. PAGE LOAD (GET MODE) ---
+// --- PAGE LOAD (GET MODE) ---
 $all_doctors = [];
 $upcoming_appointments = [];
 $reschedule_mode = false;
@@ -364,7 +425,7 @@ if ($is_logged_in) {
                 }
                 $preselected_date = $appointment_to_reschedule['appt_date'];
                 $preselected_time = (new DateTime($appointment_to_reschedule['appt_time']))->format('H:i');
-                ?>
+            ?>
                 <form action="appointment.php" method="POST">
                     <input type="hidden" name="patient_user_id" value="<?= (int) $doctor_resched_patient_id ?>">
                     <input type="hidden" name="doctor_id" value="<?= (int) $user_id ?>" required>
@@ -380,7 +441,7 @@ if ($is_logged_in) {
                                     <input type="hidden" id="selected_doctor_id" name="doctor_id"
                                         value="<?= $is_doctor ? (int) $user_id : ($preselected_doctor['id'] ?? '') ?>" required>
                                     <div class="doctor-item">
-                                        <img src="<?= htmlspecialchars($preselected_doctor['avatar_url'] ?? 'assets/images/default-avatar.png') ?>"
+                                        <img src="<?= htmlspecialchars($preselected_doctor['avatar_url'] ?? 'assets/images/default-doctor.png') ?>"
                                             alt="Dr <?= htmlspecialchars($doctor_fullname) ?>">
                                         <div class="doctor-info">
                                             <span class="doctor-name">Dr <?= htmlspecialchars($doctor_fullname) ?></span>
@@ -438,7 +499,7 @@ if ($is_logged_in) {
                 </div>
                 <?php foreach ($upcoming_appointments as $appt): ?>
                     <section class="appointment-card">
-                        <img src="<?= htmlspecialchars($appt['avatar_url'] ?? 'assets/images/default-avatar.png') ?>"
+                        <img src="<?= htmlspecialchars($appt['avatar_url'] ?? 'assets/images/default-doctor.png') ?>"
                             alt="Dr <?= htmlspecialchars($appt['first_name']) ?>" class="doctor-pic">
                         <div class="appointment-details">
                             <?php $d = new DateTime($appt['appt_date'] . ' ' . $appt['appt_time']); ?>
@@ -464,7 +525,7 @@ if ($is_logged_in) {
                 if ($doc['id'] == $preselected_doctor_id)
                     $preselected_doctor = $doc;
         }
-        ?>
+    ?>
         <main class="appointment-container">
             <h1 class="main-title"><?= $is_rescheduling ? 'Reschedule' : 'Book an' ?> <span>Appointment</span></h1>
 
@@ -515,7 +576,7 @@ if ($is_logged_in) {
                                 ?>
                                 <?php if ($doctorDisplay): ?>
                                     <div class="doctor-item">
-                                        <img src="<?= htmlspecialchars($doctorDisplay['avatar_url'] ?? 'assets/images/default-avatar.png') ?>"
+                                        <img src="<?= htmlspecialchars($doctorDisplay['avatar_url'] ?? 'assets/images/default-doctor.png') ?>"
                                             alt="Dr <?= htmlspecialchars($doctorDisplay['first_name']) ?>">
                                         <div class="doctor-info">
                                             <span class="doctor-name">Dr
@@ -535,13 +596,13 @@ if ($is_logged_in) {
 
                         <input type="hidden" id="selected_doctor_id" name="doctor_id"
                             value="<?= $is_doctor ? (int) $user_id : ($preselected_doctor['id'] ?? '') ?>" required>
-
+                        
                         <!-- Only visible to patients -->
                         <?php if (!$is_doctor): ?>
                             <div class="doctor-list">
                                 <?php foreach ($all_doctors as $doctor): ?>
                                     <div class="doctor-item" data-doctor-id="<?= $doctor['id'] ?>">
-                                        <img src="<?= htmlspecialchars($doctor['avatar_url'] ?? 'assets/images/default-avatar.png') ?>"
+                                        <img src="<?= htmlspecialchars($doctor['avatar_url'] ?? 'assets/images/default-doctor.png') ?>"
                                             alt="Dr <?= htmlspecialchars($doctor['first_name']) ?>">
                                         <div class="doctor-info">
                                             <span class="doctor-name">Dr
